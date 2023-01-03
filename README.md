@@ -13,7 +13,8 @@
 5. On desktop, go to https://accounts.atoma.cloud, inspect the network request for `atoma.cloud/queue/refresh` and copy the `RefreshToken` value
 6. Open "Atoma Refresh" in Automagic, edit the "Set refresh token" node and replace `YOUR_REFRESH_TOKEN_COPIED_FROM_ATOMA.CLOUD/QUEUE/REFRESH_NETWORK_REQUEST` with the value you just copied.
 7. Open Atoma Check, edit the "Select Character" node and replace `YOUR_OPERATIVE_NAME` with one of your character's names
-8. Edit the "Parse Store Items" node and edit `360` to whatever minimum base rating of items you want to get notifications for
+8. Edit the "GET store" node and replace `{atoma_store_zealot}` with `{atoma_store_veteran}`, `{atoma_store_psyker}` or `{atoma_store_ogryn}` as appropriate (will automate this step some time)
+9. Edit the "Parse Store Items" node and edit `360` to whatever minimum base rating of items you want to get notifications for
 
 Every hour, if any items in the shop for your character meet that threshold, you'll get a notification:
 
