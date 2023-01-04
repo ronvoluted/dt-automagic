@@ -5,9 +5,9 @@
     <name>Global Variable Date/Time: global_atoma_refresh_time</name>
     <enabled>true</enabled>
     <variable>global_atoma_refresh_time</variable>
-    <executeWhenMissed>false</executeWhenMissed>
-    <executed>0</executed>
-    <executeAt>1672727693211</executeAt>
+    <executeWhenMissed>true</executeWhenMissed>
+    <executed>1672806385179</executed>
+    <executeAt>1672806385179</executeAt>
     <allowInDeviceIdle>false</allowInDeviceIdle>
     <likeAlarmClock>false</likeAlarmClock>
   </trigger>
@@ -35,8 +35,28 @@
   </trigger>
   <condition type="expression">
     <useDefaultName>true</useDefaultName>
+    <name>Expression: length(global_atoma_selected_chars) &gt; 0</name>
+    <expression>length(global_atoma_selected_chars) &gt; 0</expression>
+  </condition>
+  <condition type="expression">
+    <useDefaultName>true</useDefaultName>
+    <name>Expression: length(global_atoma_threshold) &gt; 0</name>
+    <expression>length(global_atoma_threshold) &gt; 0</expression>
+  </condition>
+  <condition type="expression">
+    <useDefaultName>true</useDefaultName>
+    <name>Expression: length(stores_unchecked) &gt; 0</name>
+    <expression>length(stores_unchecked) &gt; 0</expression>
+  </condition>
+  <condition type="expression">
+    <useDefaultName>true</useDefaultName>
     <name>Expression: length(threshold_offers) &gt; 0</name>
     <expression>length(threshold_offers) &gt; 0</expression>
+  </condition>
+  <condition type="expression">
+    <useDefaultName>true</useDefaultName>
+    <name>Expression: length(value) &gt; 0</name>
+    <expression>length(value) &gt; 0</expression>
   </condition>
   <action type="script">
     <useDefaultName>false</useDefaultName>
@@ -131,9 +151,7 @@ for (o in threshold_offers) {
 	addElement(threshold_summaries, summary);
 }
 
-global_atoma_title="{length(threshold_offers)} × {base_item_level_threshold}+ items";
-global_atoma_summary=join(threshold_summaries, "\n\n");
-</script>
+summary=join(threshold_summaries, "\n\n");</script>
   </action>
   <action type="notification_status_bar">
     <useDefaultName>false</useDefaultName>
@@ -172,6 +190,22 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
     <isGroupSummary>false</isGroupSummary>
     <actionRef text="View summary" icon="AUTOMAGIC" remove="true">Show Atoma summary</actionRef>
   </action>
+  <action type="set_flow_state">
+    <useDefaultName>false</useDefaultName>
+    <name>Enable Atoma flows</name>
+    <enable>true</enable>
+    <includeFlowNamePatternList>Atoma Check,Atoma Refresh,Atoma Show</includeFlowNamePatternList>
+    <excludeFlowNamePatternList></excludeFlowNamePatternList>
+  </action>
+  <action type="execute_flows">
+    <useDefaultName>true</useDefaultName>
+    <name>Execute Flows: Atoma Check</name>
+    <includeFlowNamePatternList>Atoma Check</includeFlowNamePatternList>
+    <excludeFlowNamePatternList></excludeFlowNamePatternList>
+    <skipDisabledFlowsWithoutError>false</skipDisabledFlowsWithoutError>
+    <waitForFlowsToFinish>false</waitForFlowsToFinish>
+    <returnLocalVariablesToCallingFlow>false</returnLocalVariablesToCallingFlow>
+  </action>
   <action type="http_request">
     <useDefaultName>false</useDefaultName>
     <name>Fetch queue/refresh endpoint</name>
@@ -191,7 +225,7 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
     <uploadFilePath></uploadFilePath>
     <timeout>60000</timeout>
     <setCustomHTTPHeaders>true</setCustomHTTPHeaders>
-    <customHTTPHeaders>Authorization: Bearer {atoma_token}</customHTTPHeaders>
+    <customHTTPHeaders>Authorization: Bearer {global_atoma_refresh["RefreshToken"]}</customHTTPHeaders>
     <storeInVariable>true</storeInVariable>
     <variable>atoma_refresh_response</variable>
     <path>/storage/emulated/0/Download/file.bin</path>
@@ -199,9 +233,9 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
   </action>
   <action type="http_request">
     <useDefaultName>false</useDefaultName>
-    <name>Fetch queue/refresh endpoint with RefreshToken</name>
+    <name>GET queue/refresh</name>
     <url>https://bsp-auth-prod.atoma.cloud/queue/refresh</url>
-    <verifyCertificates>false</verifyCertificates>
+    <verifyCertificates>true</verifyCertificates>
     <basicAuthentication>false</basicAuthentication>
     <username></username>
     <clientCert>false</clientCert>
@@ -225,8 +259,8 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
   <action type="http_request">
     <useDefaultName>false</useDefaultName>
     <name>GET store</name>
-    <url>{atoma_store_zealot}</url>
-    <verifyCertificates>false</verifyCertificates>
+    <url>{store_url}</url>
+    <verifyCertificates>true</verifyCertificates>
     <basicAuthentication>false</basicAuthentication>
     <username></username>
     <clientCert>false</clientCert>
@@ -248,10 +282,10 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
     <followRedirects>true</followRedirects>
   </action>
   <action type="http_request">
-    <useDefaultName>true</useDefaultName>
-    <name>HTTP Request: GET https://bsp-td-prod.atoma.cloud/web/{global_atoma_refresh["Sub"]}/summary   store in atoma_summary_response</name>
+    <useDefaultName>false</useDefaultName>
+    <name>GET summary</name>
     <url>https://bsp-td-prod.atoma.cloud/web/{global_atoma_refresh["Sub"]}/summary</url>
-    <verifyCertificates>false</verifyCertificates>
+    <verifyCertificates>true</verifyCertificates>
     <basicAuthentication>false</basicAuthentication>
     <username></username>
     <clientCert>false</clientCert>
@@ -277,20 +311,20 @@ global_atoma_summary=join(threshold_summaries, "\n\n");
     <name>Parse `queue/refresh` response</name>
     <script>global_atoma_refresh=fromJSON(atoma_refresh_response);
 global_atoma_refresh_time=getDate();
-global_atoma_refresh_time=addSeconds(global_atoma_refresh_time, global_atoma_refresh["ExpiresIn"] - 10);</script>
+global_atoma_refresh_time=addSeconds(global_atoma_refresh_time, global_atoma_refresh["ExpiresIn"] - 10);
+log("Token expires at {global_atoma_refresh_time }");</script>
   </action>
   <action type="script">
     <useDefaultName>false</useDefaultName>
     <name>Parse Store Items</name>
-    <script>base_item_level_threshold=360;
-threshold_offers=newList();
+    <script>threshold_offers=newList();
 
 for (offer in atoma_store["personal"]) {
 	slash_segments=split(offer["description"]["id"], "\/");
 	item_name=slash_segments[length(slash_segments) - 1];
 	stats=offer["description"]["overrides"];
 
-	if (stats["baseItemLevel"] &gt;= base_item_level_threshold) {
+	if (stats["baseItemLevel"] &gt;= global_atoma_threshold) {
 		item=newMap();
 		addMapEntry(item, "item_name", item_name);
 		addMapEntry(item, "base_item_level", stats["baseItemLevel"]);
@@ -313,36 +347,140 @@ for (offer in atoma_store["personal"]) {
   </action>
   <action type="script">
     <useDefaultName>true</useDefaultName>
-    <name>Script: atoma_summary=fromJSON(atoma_summary_response); atoma_characters=atoma_summary["characters"]; for (character in atoma_characters) { if (character["name"] == atoma_character) { atoma_character_id=character["id"]; } }; atoma_store_ogryn="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_ogryn?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_psyker="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_psyker?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_veteran="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_veteran?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_zealot="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_zealot?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";</name>
-    <script>atoma_summary=fromJSON(atoma_summary_response);
-atoma_characters=atoma_summary["characters"];
+    <name>Script: chars_list=newList(); for (character in getMapKeys(global_atoma_characters)) { archetype=global_atoma_characters[character]['archetype']; archetype=toUpperCase(left(archetype, 1)) + substring(archetype, 1); // capitalise addElement(chars_list, "{character} ({archetype})"); }</name>
+    <script>chars_list=newList();
 
-for (character in atoma_characters) {
-  if (character["name"] == atoma_character) {
-    atoma_character_id=character["id"];
-  }
-};
-
-atoma_store_ogryn="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_ogryn?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";
-atoma_store_psyker="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_psyker?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";
-atoma_store_veteran="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_veteran?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";
-atoma_store_zealot="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_zealot?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";</script>
-  </action>
-  <action type="script">
-    <useDefaultName>false</useDefaultName>
-    <name>Select Character</name>
-    <script>atoma_character="YOUR_OPERATIVE_NAME";</script>
-  </action>
-  <action type="script">
-    <useDefaultName>false</useDefaultName>
-    <name>Set refresh token</name>
-    <script>atoma_token="";
-
-if (global_atoma_refresh["RefreshToken"]) {
-  atoma_token=global_atoma_refresh["RefreshToken"];
-} else {
-atoma_token="YOUR_REFRESH_TOKEN_COPIED_FROM_ATOMA.CLOUD/QUEUE/REFRESH_NETWORK_REQUEST";
+for (character in getMapKeys(global_atoma_characters)) {
+  archetype=global_atoma_characters[character]['archetype'];
+	archetype=toUpperCase(left(archetype, 1)) + substring(archetype, 1); // capitalise
+  addElement(chars_list, "{character} ({archetype})");
 }</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: current_char=removeElement(stores_unchecked, 0); //current_char=stores_unchecked; store_url="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_{global_atoma_characters[current_char]['archetype']}?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={global_atoma_characters[current_char]['id']}";</name>
+    <script>current_char=removeElement(stores_unchecked, 0);
+//current_char=stores_unchecked;
+
+store_url="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_{global_atoma_characters[current_char]['archetype']}?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={global_atoma_characters[current_char]['id']}";</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_refresh=fromJSON(atoma_refresh_response); global_atoma_access_token=global_atoma_refresh["AccessToken"]; global_atoma_refresh_token=global_atoma_refresh["RefreshToken"];</name>
+    <script>global_atoma_refresh=fromJSON(atoma_refresh_response);
+global_atoma_access_token=global_atoma_refresh["AccessToken"];
+global_atoma_refresh_token=global_atoma_refresh["RefreshToken"];</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_refresh_token=value</name>
+    <script>global_atoma_refresh_token=value</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_selected_chars=newList(); for (character in value) { addElement(global_atoma_selected_chars, split(character, " ")[0]); }</name>
+    <script>global_atoma_selected_chars=newList();
+
+for (character in value) {
+  addElement(global_atoma_selected_chars, split(character, " ")[0]);
+}</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_summary=fromJSON(atoma_summary_response); global_atoma_characters=newMap(); for (character in global_atoma_summary["characters"]) { global_atoma_characters[character["name"]]=character; log(character); };</name>
+    <script>global_atoma_summary=fromJSON(atoma_summary_response);
+
+global_atoma_characters=newMap();
+
+for (character in global_atoma_summary["characters"]) {
+  global_atoma_characters[character["name"]]=character;
+log(character);
+};
+</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_threshold=value</name>
+    <script>global_atoma_threshold=value</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: global_atoma_title="{threshold_offers_total} × {global_atoma_threshold}+ items";</name>
+    <script>global_atoma_title="{threshold_offers_total} × {global_atoma_threshold}+ items";</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: stores_unchecked=copyList(global_atoma_selected_chars); threshold_offers_total=0; global_atoma_summary="";</name>
+    <script>stores_unchecked=copyList(global_atoma_selected_chars);
+threshold_offers_total=0;
+global_atoma_summary="";</script>
+  </action>
+  <action type="script">
+    <useDefaultName>true</useDefaultName>
+    <name>Script: threshold_offers_total=threshold_offers_total+length(threshold_offers); global_atoma_summary=global_atoma_summary + "--- {current_char} ---" + "\n" + summary + "\n\n";</name>
+    <script>threshold_offers_total=threshold_offers_total+length(threshold_offers);
+
+global_atoma_summary=global_atoma_summary + "--- {current_char} ---" + "\n" + summary + "\n\n";</script>
+  </action>
+  <action type="input_dialog">
+    <useDefaultName>false</useDefaultName>
+    <name>Select operatives</name>
+    <title>Select Operatives to Monitor</title>
+    <inputDialogType>MULTI_CHOICE</inputDialogType>
+    <prompt></prompt>
+    <inputValues>{chars_list, listformat, comma}</inputValues>
+    <defaultValue></defaultValue>
+    <titleFontSize>DEFAULT</titleFontSize>
+    <promptFontSize>DEFAULT</promptFontSize>
+    <fontSize>DEFAULT</fontSize>
+    <timeoutEnabled>false</timeoutEnabled>
+    <timeout>60000</timeout>
+    <defaultValueOnTimeout></defaultValueOnTimeout>
+    <showWhenLocked>false</showWhenLocked>
+    <turnScreenOn>false</turnScreenOn>
+    <keepScreenOn>false</keepScreenOn>
+    <enlargeDialogWidth>false</enlargeDialogWidth>
+    <keyboardCapitalizeSentences>false</keyboardCapitalizeSentences>
+  </action>
+  <action type="input_dialog">
+    <useDefaultName>false</useDefaultName>
+    <name>Select threshild</name>
+    <title>Select minimum base level to notify on</title>
+    <inputDialogType>NUMBER</inputDialogType>
+    <prompt></prompt>
+    <inputValues></inputValues>
+    <defaultValue>345</defaultValue>
+    <titleFontSize>DEFAULT</titleFontSize>
+    <promptFontSize>DEFAULT</promptFontSize>
+    <fontSize>DEFAULT</fontSize>
+    <timeoutEnabled>false</timeoutEnabled>
+    <timeout>60000</timeout>
+    <defaultValueOnTimeout></defaultValueOnTimeout>
+    <showWhenLocked>false</showWhenLocked>
+    <turnScreenOn>false</turnScreenOn>
+    <keepScreenOn>false</keepScreenOn>
+    <enlargeDialogWidth>false</enlargeDialogWidth>
+    <keyboardCapitalizeSentences>false</keyboardCapitalizeSentences>
+  </action>
+  <action type="input_dialog">
+    <useDefaultName>false</useDefaultName>
+    <name>Set initial refresh token</name>
+    <title>Enter RefreshToken from atoma.cloud</title>
+    <inputDialogType>SINGLE_LINE_TEXT</inputDialogType>
+    <prompt></prompt>
+    <inputValues></inputValues>
+    <defaultValue>{global_atoma_refresh["RefreshToken"]}</defaultValue>
+    <titleFontSize>DEFAULT</titleFontSize>
+    <promptFontSize>DEFAULT</promptFontSize>
+    <fontSize>DEFAULT</fontSize>
+    <timeoutEnabled>false</timeoutEnabled>
+    <timeout>60000</timeout>
+    <defaultValueOnTimeout></defaultValueOnTimeout>
+    <showWhenLocked>false</showWhenLocked>
+    <turnScreenOn>false</turnScreenOn>
+    <keepScreenOn>false</keepScreenOn>
+    <enlargeDialogWidth>false</enlargeDialogWidth>
+    <keyboardCapitalizeSentences>false</keyboardCapitalizeSentences>
   </action>
   <action type="message_dialog">
     <useDefaultName>false</useDefaultName>
@@ -353,55 +491,86 @@ atoma_token="YOUR_REFRESH_TOKEN_COPIED_FROM_ATOMA.CLOUD/QUEUE/REFRESH_NETWORK_RE
     <timeoutEnabled>false</timeoutEnabled>
     <timeout>60000</timeout>
   </action>
-  <action type="sleep">
-    <useDefaultName>true</useDefaultName>
-    <name>Sleep: {global_atoma_refresh["ExpiresIn"] -10}s (keep device awake)</name>
-    <duration>{global_atoma_refresh["ExpiresIn"] -10}s</duration>
-    <keepDeviceAwake>true</keepDeviceAwake>
-    <allowWakeupFromDeviceIdle>false</allowWakeupFromDeviceIdle>
-  </action>
+  <flow type="flow">
+    <name>Atoma Activate</name>
+    <enabled>false</enabled>
+    <executionPolicy>PARALLEL</executionPolicy>
+    <triggercontainer id="t1" x="69.99999" y="52.499996" />
+    <actioncontainer id="t2" x="489.9999" y="262.49982">Select threshild</actioncontainer>
+    <conditioncontainer id="t3" x="-350.0" y="402.49994">Expression: length(value) &gt; 0</conditioncontainer>
+    <actioncontainer id="t4" x="70.00012" y="402.50037">Script: global_atoma_summary=fromJSON(atoma_summary_response); global_atoma_characters=newMap(); for (character in global_atoma_summary["characters"]) { global_atoma_characters[character["name"]]=character; log(character); };</actioncontainer>
+    <conditioncontainer id="t5" x="279.99994" y="682.5">Expression: length(global_atoma_selected_chars) &gt; 0</conditioncontainer>
+    <actioncontainer id="t6" x="490.00006" y="402.5">Script: global_atoma_threshold=value</actioncontainer>
+    <conditioncontainer id="t7" x="489.99994" y="542.5">Expression: length(global_atoma_threshold) &gt; 0</conditioncontainer>
+    <actioncontainer id="t8" x="-350.00006" y="542.4999">Script: global_atoma_refresh_token=value</actioncontainer>
+    <actioncontainer id="t9" x="700.0" y="262.50003">Enable Atoma flows</actioncontainer>
+    <actioncontainer id="t10" x="700.0" y="402.50003">Execute Flows: Atoma Check</actioncontainer>
+    <actioncontainer id="t11" x="280.0" y="262.49988">Script: chars_list=newList(); for (character in getMapKeys(global_atoma_characters)) { archetype=global_atoma_characters[character]['archetype']; archetype=toUpperCase(left(archetype, 1)) + substring(archetype, 1); // capitalise addElement(chars_list, "{character} ({archetype})"); }</actioncontainer>
+    <actioncontainer id="t12" x="280.0001" y="542.4998">Script: global_atoma_selected_chars=newList(); for (character in value) { addElement(global_atoma_selected_chars, split(character, " ")[0]); }</actioncontainer>
+    <actioncontainer id="t13" x="280.0" y="402.49982">Select operatives</actioncontainer>
+    <actioncontainer id="t14" x="-140.00002" y="402.4997">Script: global_atoma_refresh=fromJSON(atoma_refresh_response); global_atoma_access_token=global_atoma_refresh["AccessToken"]; global_atoma_refresh_token=global_atoma_refresh["RefreshToken"];</actioncontainer>
+    <actioncontainer id="t15" x="-350.0" y="262.49982">Set initial refresh token</actioncontainer>
+    <actioncontainer id="t16" x="-139.99998" y="262.49994">GET queue/refresh</actioncontainer>
+    <actioncontainer id="t17" x="70.000046" y="262.49976">GET summary</actioncontainer>
+    <connection from="t1" to="t15" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t2" to="t6" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t3" to="t8" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t4" to="t11" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t5" to="t2" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t6" to="t7" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t7" to="t9" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t8" to="t16" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t9" to="t10" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t11" to="t13" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t12" to="t5" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t13" to="t12" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t14" to="t17" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t15" to="t3" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t16" to="t14" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t17" to="t4" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+  </flow>
   <flow type="flow">
     <name>Atoma Check</name>
     <enabled>true</enabled>
     <executionPolicy>PARALLEL</executionPolicy>
-    <actioncontainer id="t1" x="350.0" y="542.50006">GET store</actioncontainer>
-    <actioncontainer id="t2" x="350.00003" y="367.5003">Script: atoma_summary=fromJSON(atoma_summary_response); atoma_characters=atoma_summary["characters"]; for (character in atoma_characters) { if (character["name"] == atoma_character) { atoma_character_id=character["id"]; } }; atoma_store_ogryn="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_ogryn?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_psyker="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_psyker?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_veteran="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_veteran?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}"; atoma_store_zealot="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_zealot?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={atoma_character_id}";</actioncontainer>
-    <actioncontainer id="t3" x="350.0" y="717.5">Script: atoma_store=fromJSON(atoma_store_response);</actioncontainer>
-    <actioncontainer id="t4" x="350.0" y="192.50002">HTTP Request: GET https://bsp-td-prod.atoma.cloud/web/{global_atoma_refresh["Sub"]}/summary   store in atoma_summary_response</actioncontainer>
-    <actioncontainer id="t5" x="350.0" y="1067.5">Build message</actioncontainer>
-    <actioncontainer id="t6" x="350.0" y="1417.5">Darktide Shop Alert</actioncontainer>
-    <conditioncontainer id="t7" x="350.0" y="1242.5">Expression: length(threshold_offers) &gt; 0</conditioncontainer>
-    <actioncontainer id="t8" x="350.00006" y="892.4999">Parse Store Items</actioncontainer>
-    <actioncontainer id="t9" x="70.0" y="192.5">Select Character</actioncontainer>
-    <triggercontainer id="t10" x="70.00001" y="52.500004">
+    <actioncontainer id="t1" x="-104.99983" y="1662.5">Darktide Shop Alert</actioncontainer>
+    <actioncontainer id="t2" x="70.0" y="367.5">Script: current_char=removeElement(stores_unchecked, 0); //current_char=stores_unchecked; store_url="https://bsp-td-prod.atoma.cloud/store/storefront/credits_store_{global_atoma_characters[current_char]['archetype']}?accountId={global_atoma_refresh['Sub']}&amp;personal=true&amp;characterId={global_atoma_characters[current_char]['id']}";</actioncontainer>
+    <actioncontainer id="t3" x="70.00003" y="647.5">Script: atoma_store=fromJSON(atoma_store_response);</actioncontainer>
+    <actioncontainer id="t4" x="-105.00001" y="1522.5">Script: global_atoma_title="{threshold_offers_total} × {global_atoma_threshold}+ items";</actioncontainer>
+    <conditioncontainer id="t5" x="-104.99998" y="1382.5">Expression: length(threshold_offers) &gt; 0</conditioncontainer>
+    <actioncontainer id="t6" x="70.00005" y="787.4999">Parse Store Items</actioncontainer>
+    <actioncontainer id="t7" x="69.99998" y="927.49976">Build message</actioncontainer>
+    <conditioncontainer id="t8" x="69.99997" y="1207.5">Expression: length(stores_unchecked) &gt; 0</conditioncontainer>
+    <actioncontainer id="t9" x="69.99995" y="1067.5005">Script: threshold_offers_total=threshold_offers_total+length(threshold_offers); global_atoma_summary=global_atoma_summary + "--- {current_char} ---" + "\n" + summary + "\n\n";</actioncontainer>
+    <actioncontainer id="t10" x="69.99999" y="192.5">Script: stores_unchecked=copyList(global_atoma_selected_chars); threshold_offers_total=0; global_atoma_summary="";</actioncontainer>
+    <triggercontainer id="t11" x="70.0" y="52.5">
       <trigger>Periodic Timer: every 1h, 8:01 am - 11:00 pm</trigger>
     </triggercontainer>
-    <connection from="t1" to="t3" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t2" to="t1" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t3" to="t8" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t4" to="t2" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t5" to="t7" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t7" to="t6" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t8" to="t5" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t9" to="t4" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t10" to="t9" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <actioncontainer id="t12" x="70.00005" y="507.50006">GET store</actioncontainer>
+    <connection from="t2" to="t12" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t3" to="t6" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t4" to="t1" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t5" to="t4" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t6" to="t7" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t7" to="t9" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t8" to="t2" type="TRUE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t8" to="t5" type="FALSE" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t9" to="t8" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t10" to="t2" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t11" to="t10" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t12" to="t3" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
   </flow>
   <flow type="flow">
     <name>Atoma Refresh</name>
     <enabled>true</enabled>
     <executionPolicy>PARALLEL</executionPolicy>
-    <actioncontainer id="t1" x="70.00006" y="927.50024">Fetch queue/refresh endpoint with RefreshToken</actioncontainer>
-    <actioncontainer id="t2" x="69.999954" y="752.49963">Sleep: {global_atoma_refresh["ExpiresIn"] -10}s (keep device awake)</actioncontainer>
-    <triggercontainer id="t3" x="70.0" y="52.5">
+    <triggercontainer id="t1" x="69.99998" y="52.500008">
       <trigger>Global Variable Date/Time: global_atoma_refresh_time</trigger>
     </triggercontainer>
-    <actioncontainer id="t4" x="70.000015" y="402.50006">Fetch queue/refresh endpoint</actioncontainer>
-    <actioncontainer id="t5" x="69.99993" y="227.50006">Set refresh token</actioncontainer>
-    <actioncontainer id="t6" x="69.99995" y="577.49976">Parse `queue/refresh` response</actioncontainer>
-    <connection from="t2" to="t1" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t3" to="t5" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t4" to="t6" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
-    <connection from="t5" to="t4" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <actioncontainer id="t2" x="70.00002" y="192.49998">Fetch queue/refresh endpoint</actioncontainer>
+    <actioncontainer id="t3" x="69.99994" y="332.49982">Parse `queue/refresh` response</actioncontainer>
+    <connection from="t1" to="t2" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
+    <connection from="t2" to="t3" type="NORMAL" sourcePosition="SOUTH" targetPosition="NORTH" />
   </flow>
   <flow type="flow">
     <name>Atoma Show</name>
