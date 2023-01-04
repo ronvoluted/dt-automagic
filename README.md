@@ -1,5 +1,5 @@
 ## Usage
-1. [Install Automagic](https://automagic4android.com/download_en.html) (free)
+1. [Install Automagic **v1.37**](https://automagic4android.com/download_en.html) (no longer maintained, but now free and works great)
 2. Download [darktide_automagic_shop_notifications.xml](https://raw.githubusercontent.com/ronvoluted/dt-automagic/main/darktide_automagic_shop_notifications.xml) to your phone and select "Import Flows/Widgets" in Automagic to load it
 3. On desktop, inspect the network request for [`atoma.cloud/queue/refresh`](https://accounts.atoma.cloud) and copy the `RefreshToken` value
 4. Back in Automagic, hit the 3-dot menu button on "Atoma Activate" and "Execute", then paste in the token from above
